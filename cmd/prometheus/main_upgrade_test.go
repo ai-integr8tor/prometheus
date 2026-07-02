@@ -248,15 +248,15 @@ rule_files:
 
 scrape_configs:
   - job_name: 'self1'
-    scrape_interval: 100ms
+    scrape_interval: 1s
     static_configs:
       - targets: ['localhost:%d']
   - job_name: 'self2'
-    scrape_interval: 200ms
+    scrape_interval: 2s
     static_configs:
       - targets: ['localhost:%d']
   - job_name: 'self3'
-    scrape_interval: 300ms
+    scrape_interval: 3s
     static_configs:
       - targets: ['localhost:%d']
 
@@ -357,8 +357,7 @@ func testUpgradeDowngradeLTS(t *testing.T, start time.Time, lts ltsRelease) {
 		fmt.Sprintf("--web.listen-address=0.0.0.0:%d", c.prometheusPort),
 		fmt.Sprintf("--storage.tsdb.path=%s", c.prometheusDataPath),
 		// Accelerate compaction.
-		"--storage.tsdb.min-block-duration=15s",
-		"--storage.tsdb.max-block-duration=15s",
+		"--storage.tsdb.min-block-duration=65s",
 		// Accelerate chunks mmapping.
 		"--storage.tsdb.samples-per-chunk=10",
 		"--log.level=debug",
