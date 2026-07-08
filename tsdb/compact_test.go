@@ -1370,8 +1370,7 @@ func BenchmarkCompactionFromHead(b *testing.B) {
 				lbls := labels.FromStrings("__name__", "bench", "series", strconv.Itoa(i))
 				for j := range nChunks {
 					// Counter reset on every histogram forces a new head chunk per sample.
-					hist := tsdbutil.GenerateTestHistogram(int64(j))
-					hist.CounterResetHint = histogram.CounterReset
+					hist := tsdbutil.GenerateTestHistogramWithHint(j, histogram.CounterReset)
 					_, err := app.AppendHistogram(0, lbls, int64(j)*1000, hist, nil)
 					require.NoError(b, err)
 				}
