@@ -644,18 +644,21 @@ func (wp *walSubsetProcessor) reuseHistogramBuf() []histogramRecord {
 // happens whenever prev >= 2, since mmapChunks always sets the count to 1
 // when it does work), the per-stripe mmap-ready counter is decremented to
 // maintain its invariant.
-func (h *Head) appendChunkAndMmap(ms *memSeries, appendFn func() bool) bool {
+//
+// buf is a reusable scratch buffer for mmapChunks; the (possibly grown)
+// buffer is returned so callers can pass it back on the next call.
+func (h *Head) appendChunkAndMmap(ms *memSeries, buf []*memChunk, appendFn func() bool) (bool, []*memChunk) {
 	prev := ms.headChunkCount.Load()
 	chunkCreated := appendFn()
 	if chunkCreated {
 		h.metrics.chunksCreated.Inc()
 		h.metrics.chunks.Inc()
-		_ = ms.mmapChunks(h.chunkDiskMapper)
+		_, buf = ms.mmapChunks(h.chunkDiskMapper, buf)
 		if prev >= 2 {
 			h.series.decMmapReady(ms.ref)
 		}
 	}
-	return chunkCreated
+	return chunkCreated, buf
 }
 
 // processWALSamples adds the samples it receives to the head and passes
@@ -670,6 +673,7 @@ func (wp *walSubsetProcessor) processWALSamples(h *Head, mmappedChunks, oooMmapp
 
 	minValidTime := h.minValidTime.Load()
 	mint, maxt := int64(math.MaxInt64), int64(math.MinInt64)
+	var mmapBuf []*memChunk // Reusable scratch buffer for mmapChunks.
 	// storeST must be passed here so that appendPreprocessor cuts an in-progress
 	// XOR chunk immediately when replaying into a head with ST storage enabled.
 	// XOR chunks cannot store start timestamps and must not be continued with
@@ -711,7 +715,7 @@ func (wp *walSubsetProcessor) processWALSamples(h *Head, mmappedChunks, oooMmapp
 				h.numStaleSeries.Dec()
 			}
 
-			h.appendChunkAndMmap(ms, func() bool {
+			_, mmapBuf = h.appendChunkAndMmap(ms, mmapBuf, func() bool {
 				_, chunkCreated := ms.append(s.ST, s.T, s.V, 0, appendChunkOpts)
 				return chunkCreated
 			})
@@ -747,7 +751,7 @@ func (wp *walSubsetProcessor) processWALSamples(h *Head, mmappedChunks, oooMmapp
 					newlyStale = newlyStale && !value.IsStaleNaN(ms.lastHistogramValue.Sum)
 					staleToNonStale = value.IsStaleNaN(ms.lastHistogramValue.Sum) && !value.IsStaleNaN(s.h.Sum)
 				}
-				h.appendChunkAndMmap(ms, func() bool {
+				_, mmapBuf = h.appendChunkAndMmap(ms, mmapBuf, func() bool {
 					_, chunkCreated := ms.appendHistogram(s.st, s.t, s.h, 0, appendChunkOpts)
 					return chunkCreated
 				})
@@ -757,7 +761,7 @@ func (wp *walSubsetProcessor) processWALSamples(h *Head, mmappedChunks, oooMmapp
 					newlyStale = newlyStale && !value.IsStaleNaN(ms.lastFloatHistogramValue.Sum)
 					staleToNonStale = value.IsStaleNaN(ms.lastFloatHistogramValue.Sum) && !value.IsStaleNaN(s.fh.Sum)
 				}
-				h.appendChunkAndMmap(ms, func() bool {
+				_, mmapBuf = h.appendChunkAndMmap(ms, mmapBuf, func() bool {
 					_, chunkCreated := ms.appendFloatHistogram(s.st, s.t, s.fh, 0, appendChunkOpts)
 					return chunkCreated
 				})
