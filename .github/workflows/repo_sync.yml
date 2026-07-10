@@ -13,7 +13,7 @@ jobs:
     container:
       image: quay.io/prometheus/golang-builder
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - run: ./scripts/sync_repo_files.sh
         env:
           GITHUB_TOKEN: ${{ secrets.PROMBOT_GITHUB_TOKEN }}
