@@ -15,7 +15,9 @@ package main
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"encoding/json"
 	"flag"
@@ -127,6 +129,31 @@ func (c versionChangeTest) downloadAndExtractLatestLTS(t *testing.T) {
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
+	if strings.HasSuffix(c.ltsAssetURL, ".zip") {
+		b, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		zipReader, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
+		require.NoError(t, err)
+
+		for _, zf := range zipReader.File {
+			if filepath.Base(zf.Name) == prometheusBinName+".exe" || filepath.Base(zf.Name) == prometheusBinName {
+				rc, err := zf.Open()
+				require.NoError(t, err)
+				defer rc.Close()
+
+				out, err := os.OpenFile(c.ltsVersionBinPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o755)
+				require.NoError(t, err)
+				defer out.Close()
+
+				_, err = io.Copy(out, rc)
+				require.NoError(t, err)
+				return
+			}
+		}
+		t.Fatalf("prometheus binary not found in LTS zipball %s", c.ltsAssetURL)
+	}
+
 	gzReader, err := gzip.NewReader(resp.Body)
 	require.NoError(t, err)
 	defer gzReader.Close()
@@ -149,7 +176,7 @@ func (c versionChangeTest) downloadAndExtractLatestLTS(t *testing.T) {
 			return
 		}
 	}
-	require.FailNow(t, "prometheus binary not found in LTS tarball", "URL", c.ltsAssetURL)
+	t.Fatalf("prometheus binary not found in LTS tarball %s", c.ltsAssetURL)
 }
 
 // ensureHealthyMetrics polls metrics until all health invariants are satisfied. It checks
