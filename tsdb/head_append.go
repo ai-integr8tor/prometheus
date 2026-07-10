@@ -2214,17 +2214,20 @@ func (s *memSeries) mmapCurrentOOOHeadChunk(o chunkOpts, logger *slog.Logger) []
 }
 
 // mmapChunks will m-map all but first chunk on s.headChunks list and update headChunkCount.
-func (s *memSeries) mmapChunks(chunkDiskMapper *chunks.ChunkDiskMapper) (count int) {
+// buf is a reusable scratch buffer; the (possibly grown) buffer is returned
+// empty so callers can pass it back on the next call to avoid per-series
+// allocations.
+func (s *memSeries) mmapChunks(chunkDiskMapper *chunks.ChunkDiskMapper, buf []*memChunk) (count int, _ []*memChunk) {
 	if s.headChunks == nil || s.headChunks.prev == nil {
 		// There is none or only one head chunk, so nothing to m-map here.
-		return count
+		return count, releaseHeadChunksBuf(buf)
 	}
 
-	// Write chunks starting from the oldest one and stop before we get to current s.headChunks.
-	// If we have this chain: s.headChunks{t4} -> t3 -> t2 -> t1 -> t0
-	// then we need to write chunks t0 to t3, but skip s.headChunks.
-	for i := s.headChunks.len() - 1; i > 0; i-- {
-		chk := s.headChunks.atOffset(i)
+	// Collect the completed head chunks (all but the newest) in oldest-first
+	// order, then write them out.
+	buf = prepareHeadChunksBuf(buf, int(s.headChunkCount.Load())-1)
+	buf = collectHeadChunks(s.headChunks.prev, buf)
+	for _, chk := range buf {
 		chunkRef := chunkDiskMapper.WriteChunk(s.ref, chk.minTime, chk.maxTime, chk.chunk, false, handleChunkWriteError)
 		s.mmappedChunks = append(s.mmappedChunks, &mmappedChunk{
 			ref:        chunkRef,
@@ -2239,7 +2242,7 @@ func (s *memSeries) mmapChunks(chunkDiskMapper *chunks.ChunkDiskMapper) (count i
 	s.headChunks.prev = nil
 	s.setHeadChunks(s.headChunks, 1)
 
-	return count
+	return count, releaseHeadChunksBuf(buf)
 }
 
 // TODO(bwplotka): Propagate errors correctly, even when they are async. Panicking here do occurs from time to time

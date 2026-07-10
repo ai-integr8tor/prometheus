@@ -2041,6 +2041,7 @@ func (h *Head) onChunkCreated(series *memSeries, prevHeadChunkCount uint32) {
 // since holding the lock during an append could delay the next scrape or cause query timeouts.
 func (h *Head) mmapHeadChunks() {
 	var count int
+	var buf []*memChunk // Reusable scratch buffer for mmapChunks.
 	for i := range h.series.size {
 		if h.series.mmapReady[i].Load() == 0 {
 			continue // No series in this stripe need mmapping.
@@ -2053,7 +2054,8 @@ func (h *Head) mmapHeadChunks() {
 			}
 
 			series.Lock()
-			n := series.mmapChunks(h.chunkDiskMapper)
+			var n int
+			n, buf = series.mmapChunks(h.chunkDiskMapper, buf)
 			series.Unlock()
 			if n > 0 {
 				count += n
@@ -2368,11 +2370,10 @@ func (h *Head) deleteSeriesByID(refs []chunks.HeadSeriesRef) {
 			staleSeriesDeleted++
 		}
 
+		headChunkCount := series.headChunkCount.Load()
 		chunksRemoved += len(series.mmappedChunks)
-		if series.headChunks != nil {
-			chunksRemoved += series.headChunks.len()
-		}
-		if series.headChunkCount.Load() >= 2 {
+		chunksRemoved += int(headChunkCount)
+		if headChunkCount >= 2 {
 			h.series.decMmapReady(series.ref)
 		}
 		// Clear to prevent a double-subtraction from the chunksRemoved gauge if
@@ -2436,9 +2437,8 @@ func (s *stripeSeries) gcSeries(seriesRefs []storage.SeriesRef, maxt int64, shou
 			return
 		}
 
-		if series.headChunks != nil {
-			rmChunks += series.headChunks.len()
-		}
+		headChunkCount := series.headChunkCount.Load()
+		rmChunks += int(headChunkCount)
 		rmChunks += len(series.mmappedChunks)
 
 		// The series is gone entirely. We need to keep the series lock
@@ -2447,7 +2447,7 @@ func (s *stripeSeries) gcSeries(seriesRefs []storage.SeriesRef, maxt int64, shou
 		// If we don't hold them all, there's a very small chance that a series receives
 		// samples again while we are half-way into deleting it.
 		stripe := s.refStripe(series.ref)
-		if series.headChunkCount.Load() >= 2 {
+		if headChunkCount >= 2 {
 			s.decMmapReady(series.ref)
 		}
 		if hashShard != stripe {
@@ -2822,8 +2822,29 @@ func (mc *memChunk) len() (count int) {
 	return count
 }
 
+// prepareHeadChunksBuf returns an empty reusable buffer sized for expectedLen.
+func prepareHeadChunksBuf(buf []*memChunk, expectedLen int) []*memChunk {
+	if expectedLen < 0 {
+		expectedLen = 0
+	}
+	if cap(buf) > headChunksBufMaxCap || cap(buf) < expectedLen {
+		return make([]*memChunk, 0, expectedLen)
+	}
+	return buf[:0]
+}
+
+// releaseHeadChunksBuf returns an empty reusable buffer, or nil if it is oversized.
+func releaseHeadChunksBuf(buf []*memChunk) []*memChunk {
+	if cap(buf) > headChunksBufMaxCap {
+		return nil
+	}
+	clear(buf[:cap(buf)])
+	return buf[:0]
+}
+
 // collectHeadChunks walks the headChunks linked list once and returns a slice
 // in oldest-first order (matching mmappedChunks ordering).
+// For example, given head{t4} -> t3 -> t2 -> t1 -> t0, it returns [t0, t1, t2, t3, t4].
 // buf must have length 0 but may have non-zero capacity for reuse; the
 // returned slice's tail beyond its length is zeroed, so a reused, shrinking
 // buffer does not pin chunks from a previous, longer collection.
@@ -2850,30 +2871,6 @@ func (mc *memChunk) oldest() (elem *memChunk) {
 	elem = mc
 	for elem.prev != nil {
 		elem = elem.prev
-	}
-	return elem
-}
-
-// atOffset returns a memChunk that's Nth element on the linked list.
-func (mc *memChunk) atOffset(offset int) (elem *memChunk) {
-	if offset == 0 {
-		return mc
-	}
-	if offset == 1 {
-		return mc.prev
-	}
-	if offset < 0 {
-		return nil
-	}
-
-	var i int
-	elem = mc
-	for i < offset {
-		i++
-		elem = elem.prev
-		if elem == nil {
-			break
-		}
 	}
 	return elem
 }
