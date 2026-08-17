@@ -1,6 +1,6 @@
 module github.com/prometheus/prometheus
 
-go 1.20
+go 1.25.0
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.1
@@ -28,7 +28,7 @@ require (
 	github.com/go-zookeeper/zk v1.0.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/google/go-cmp v0.6.0
+	github.com/google/go-cmp v0.7.0
 	github.com/google/pprof v0.0.0-20240117000934-35fc243c5815
 	github.com/google/uuid v1.5.0
 	github.com/gophercloud/gophercloud v1.8.0
@@ -39,7 +39,7 @@ require (
 	github.com/hetznercloud/hcloud-go/v2 v2.6.0
 	github.com/ionos-cloud/sdk-go/v6 v6.1.11
 	github.com/json-iterator/go v1.1.12
-	github.com/klauspost/compress v1.17.4
+	github.com/klauspost/compress v1.18.0
 	github.com/kolo/xmlrpc v0.0.0-20220921171641-a4b6fa1dd06b
 	github.com/linode/linodego v1.27.1
 	github.com/miekg/dns v1.1.58
@@ -58,7 +58,7 @@ require (
 	github.com/prometheus/exporter-toolkit v0.11.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.22
 	github.com/shurcooL/httpfs v0.0.0-20230704072500-f1e31cf0ba5c
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.11.1
 	github.com/vultr/govultr/v2 v2.17.2
 	go.opentelemetry.io/collector/featuregate v1.0.1
 	go.opentelemetry.io/collector/pdata v1.0.1
@@ -75,12 +75,12 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
-	golang.org/x/net v0.20.0
+	golang.org/x/net v0.48.0
 	golang.org/x/oauth2 v0.16.0
-	golang.org/x/sync v0.6.0
-	golang.org/x/sys v0.16.0
+	golang.org/x/sync v0.20.0
+	golang.org/x/sys v0.43.0
 	golang.org/x/time v0.5.0
-	golang.org/x/tools v0.17.0
+	golang.org/x/tools v0.40.1-0.20260108161641-ca281cf95054
 	google.golang.org/api v0.157.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240116215550-a9fa1716bcac
 	google.golang.org/grpc v1.61.0
@@ -104,7 +104,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
-	github.com/cilium/ebpf v0.11.0 // indirect
+	github.com/cilium/ebpf v0.22.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20231109132714-523115ebc101 // indirect
 	github.com/containerd/cgroups/v3 v3.0.3 // indirect
 	github.com/containerd/log v0.1.0 // indirect
@@ -170,31 +170,32 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.2 // indirect
+	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.0.2 // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
+	github.com/sirupsen/logrus v1.9.4 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	go.mongodb.org/mongo-driver v1.13.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel/metric v1.22.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
-	golang.org/x/crypto v0.18.0 // indirect
-	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/term v0.16.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/crypto v0.46.0 // indirect
+	golang.org/x/mod v0.31.0 // indirect
+	golang.org/x/telemetry v0.0.0-20251203150158-8fff8a5912fc // indirect
+	golang.org/x/term v0.38.0 // indirect
+	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/tools/godoc v0.1.0-deprecated // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240102182953-50ed04b92917 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240116215550-a9fa1716bcac // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gotest.tools/v3 v3.0.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
